@@ -1,0 +1,26 @@
+In Dutch Sinterklaas there exists a tradition,
+Where gifts are addressed by poetic submission,
+In which the recipient's name is concealed,
+And will, for the reader, be duly revealed. 
+
+This girl's both an Anglo- and Francophile;
+She's been known to run an 8.19 minute mile.
+And when she's not moving extremely fast,
+Her vocation is studying art from the past.   
+
+In the course of her studies she gazes at rocks,
+And occasionally pictures of giant black... Rothko paintings.
+She frequently contemplates methods and murder, 
+But spends much of her day as a small greyhound herder.
+
+When it comes to refreshment she's partial to gin,
+Though drinking Chianti's considered a sin.
+While travelling Europe she looks out for sheep,
+Although frequently misses them 'cause she's asleep.
+
+All in all this lady's a true Southern belle,
+Extensively-travelled, and worldly as well.
+So we reach our conclusion in round-about manner,
+It should now be clear that these gifts are for ____
+
+-- Sint

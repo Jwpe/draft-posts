@@ -1,0 +1,25 @@
+<h2>Rule #1: Do incremental migrations </h2>
+<p>Migrations which involve changes to schema and data are slow, especially on big tables. The best strategy is to limit the scope of your migrations to one change at a time, so that the migration can run as quickly as possible and minimise downtime.  </p>
+<h2>But rules are made to be broken...</h2>
+<p>Sometimes the nature of the change to your model structure necessitates multiple migrations that need to occur at once. For example, if I want to standardize multiple models by using an abstract base model.</p><p>class Book(models.Model):</p><p>    author = models.ForeignKey(Author)
+    book_title = models.CharField(max_length=1000)
+    page_count = models.IntegerField()</p><p>class Magazine(models.Model):</p><p>    writer = models.ForeignKey(Author)
+    title = models.CharField(max_length=1000)
+    edition = models.CharField(max_length=1000)</p><p>Let's say I want to standardize the above two models to both call their author 'author', and their title 'title'. In terms of code, the most sensible way to do this would be to define an abstract base model as follows:</p><p>class Document(models.Model):</p><p>    class Meta:
+        abstract = True</p><p>    author = models.ForeignKey(Author)
+    title = models.CharField(max_length=1000)</p><p>class Book(Document):
+    page_count = models.IntegerField()</p><p>class Magazine(Document):
+    edition = models.CharField(max_length=1000)</p><p>So we just change that, and now we're all good, right?
+Not so much. In order to effect this change on our database, we're going to need six migrations:
+    - Schema migration to add <code>title</code> field to Books
+    - Data migration to copy <code>book_title</code> to <code>title</code> for  each Book
+    - Schema migration to delete <code>book_title</code> field
+    - Schema migration to add <code>author</code> field to Magazines
+    - Data migration to copy <code>writer</code> to <code>author</code> for each Magazine
+    - Schema migration to delete <code>writer</code> field</p><p>All of these will have to happen at the same time, because all of the code changes have occurred simultaneously. If we wanted to avoid this, we would have to go through incremental code changes to our original models BEFORE we arrived at our desired setup of having an abstract base model.</p><p>While this is possible with foresight and planning, the more models that you wish to standardise, the harder a series of incremental code-database-code changes becomes.
+So in the situation where we simply have to make this migration, how should we do it?</p>
+<h1>Idea 1: The Great Migration</h1>
+<p>If we have several million Books and Magazines, this is going to be one slow migration. For most apps in production it would introduce an unacceptable amount of downtime. We can sidestep this issue by spinning up a second, similarly sized database, transferring our data to it, and running the migration on our database copy. </p><p>In order to do this, we make use of Heroku pgbackups:transfer from <a href="https://github.com/heroku/heroku-pg-extras/">Heroku PG Extras</a>. This wonderful tool allows one to dump a Heroku database directly into a second DB, while the first database is running. The contents of the second database will exactly mirror that of the first, <strong>when the dump was started</strong>. Subsequent changes to the primary database will, unfortunately, not be reflected in the follower. To do this, we run: </p><p><code>heroku pgbackups:transfer &lt;production db&gt; &lt;full URL of destination db&gt; -a &lt;production app&gt;</code></p><p>Once our database is transferred, we can proceed to carry out our schema and data migrations in isolation. A Django ORM caveat - use objects.iterator in the data migration code or your operation will become memory-bound as every single object in the queryset will be cached in memory.</p><p>If your migrations are hitting different, unrelated tables you can run them concurrently(!!!) on a per-app basis. Since the migrations may take a long time, we use the heroku run:detached command to avoid the process being killed if our shell connection to Heroku dies. So, for example we could launch:
+heroku run:detached python myapp/manage.py migrate books -a  
+heroku run:detached python myapp/manage.py migrate magazines - a 
+These migrations will run concurrently on the Books and Magazines tables, assuming these are in the separate apps books and magazines.</p><p>In an ideal world, once the migrations were complete we would simply promote the new database to our application's However, the savvy readers among you will have recognised an obvious problem with this strategy.</p>
